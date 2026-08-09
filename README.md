@@ -23,14 +23,13 @@ bash application/verification-scripts/verify.sh
 | `cloud-setup/` | Terraform + Terragrunt for the AWS side — written, never applied |
 | `documentation/` | Write-ups and command references |
 
-## What this is meant to show
+## Key Points
 
-- **It runs.** One script up, one command to install, one script to prove the endpoints, probes, HPA and PDB actually behave. Secrets and ConfigMaps are kept in different files
-  and Kubernetes versions are fixed.
-- **No pipeline job holds cluster credentials.** CI stops at publishing the chart; Argo CD
-  pulls it into EKS, and AWS access is short-lived via GitLab OIDC.
-- **The gaps are stated, not hidden.** Security context, Ingress/TLS and the database are out of scope; the CI and AWS layers are written but were never executed.
+- **Local Setup Complete** One script up, one command to install, one script to prove the endpoints, probes, HPA and PDB actually behave. Secrets and ConfigMaps are kept in different files and Kubernetes versions are fixed.
+- **No pipeline job holds cluster credentials.** CI stops at publishing the chart; Argo CD pulls it into EKS, and AWS access is short-lived via GitLab OIDC.
+- **CI/CD and Cloud Setup.** The CI and AWS layers are written but were never executed, these would change once scaled to a enterprise level.
 
+- **TLS and Postgres** The implementation for this was not done, but explanation on how the things would work theoratically has been explained based on practical experience.
 ## Documentation
 
 The reasoning behind every decision above lives here:
