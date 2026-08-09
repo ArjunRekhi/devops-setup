@@ -1,0 +1,11 @@
+.DS_Store
+.git/
+.gitignore
+*.swp
+*.tmp
+*.orig
+*.bak
+.idea/
+.vscode/
+# Never let a real secret values file end up inside a packaged chart.
+values-secret.yaml

@@ -1,0 +1,28 @@
+# Never commit real secret values. Only the .example templates are tracked.
+values-secret.yaml
+**/charts/*/values-secret.yaml
+*.secret.yaml
+
+# Locally generated TLS material (Phase 4 regenerates it via cluster/gen-tls.sh)
+certs/
+*.key
+*.crt
+*.pem
+
+# Helm build artifacts
+**/charts/*/charts/
+**/charts/*/Chart.lock
+*.tgz
+
+# Terraform (nothing here is ever applied, but be safe)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,46 @@
+# Build -> lint/test -> push image to ECR -> publish the packaged chart to Nexus.
+#
+# The pipeline stops at publishing the artifact. Argo CD watches the Nexus repository
+# and reconciles the chart into EKS, so nothing here holds cluster credentials.
+#
+# Never executed. No AWS account, no Nexus, no GitLab project behind it — this is valid
+# YAML that has not been checked against GitLab's pipeline schema.
+# Reasoning and the AWS auth model: documentation/03-cicd.md
+
+stages:
+  - build
+  - test
+  - publish
+
+variables:
+  AWS_REGION: eu-central-1
+  AWS_ACCOUNT_ID: "000000000000"
+  ECR_REGISTRY: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+  ECR_REPOSITORY: podinfo
+  ECR_IMAGE: "${ECR_REGISTRY}/${ECR_REPOSITORY}"
+
+  NEXUS_REGISTRY: nexus.example.com
+  NEXUS_HELM_REPO: "oci://${NEXUS_REGISTRY}/helm-hosted"
+
+  CHART_DIR: application/charts/podinfo-app
+  # Monotonic and valid SemVer, so Argo can order published releases.
+  CHART_VERSION: "0.1.${CI_PIPELINE_IID}"
+
+  # podinfo ships as a prebuilt public image, so there is nothing to compile. "Build"
+  # here means mirroring that image into ECR — see documentation/03-cicd.md.
+  UPSTREAM_IMAGE: "ghcr.io/stefanprodan/podinfo:6.14.1"
+  # The commit SHA, never `latest`. An unpinned tag makes a rollback meaningless.
+  IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+
+workflow:
+  rules:
+    # Without this, a push to a branch with an open MR builds the same commit twice.
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+include:
+  - local: ci-cd/common/aws-oidc.yml
+  - local: ci-cd/build/mirror-image.yml
+  - local: ci-cd/test/chart.yml
+  - local: ci-cd/test/image.yml
+  - local: ci-cd/publish/chart.yml

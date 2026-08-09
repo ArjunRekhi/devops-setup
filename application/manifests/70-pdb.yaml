@@ -1,0 +1,17 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: podinfo
+  namespace: podinfo
+  labels:
+    app.kubernetes.io/name: podinfo
+    app.kubernetes.io/version: "6.14.1"
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  # maxUnavailable, not minAvailable: minAvailable == replicas permits zero
+  # disruption and deadlocks node drains.
+  # Bounds voluntary disruption only — node failure and OOM kills bypass it.
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: podinfo

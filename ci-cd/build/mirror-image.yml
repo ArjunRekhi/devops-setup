@@ -1,0 +1,20 @@
+# Mirrors the pinned upstream image into ECR under the commit SHA.
+#
+# podinfo is prebuilt and public, so there is nothing to compile. Mirroring is the
+# honest version of "build" here, and it is a real practice: deploys stop depending on
+# a third party's registry, and the image that gets scanned is the one that ships.
+
+build-image:
+  extends: .aws-oidc
+  stage: build
+  image: docker:27-cli
+  services:
+    - docker:27-dind
+  variables:
+    AWS_ROLE_ARN: $ECR_PUSH_ROLE_ARN
+    DOCKER_TLS_CERTDIR: "/certs"
+  script:
+    - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+    - docker pull "$UPSTREAM_IMAGE"
+    - docker tag "$UPSTREAM_IMAGE" "$ECR_IMAGE:$IMAGE_TAG"
+    - docker push "$ECR_IMAGE:$IMAGE_TAG"

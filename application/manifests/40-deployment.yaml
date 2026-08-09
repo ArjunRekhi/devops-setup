@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: podinfo
+  namespace: podinfo
+  labels:
+    app.kubernetes.io/name: podinfo
+    app.kubernetes.io/version: "6.14.1"
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  # No replicas field: the HPA owns it. Declaring it here would reset the count
+  # on every `kubectl apply` and fight the autoscaler.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Never dip below current capacity during a rollout.
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: podinfo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: podinfo
+    spec:
+      serviceAccountName: podinfo
+      automountServiceAccountToken: false
+      containers:
+        - name: podinfo
+          image: ghcr.io/stefanprodan/podinfo:6.14.1
+          imagePullPolicy: IfNotPresent
+          command:
+            - ./podinfo
+            - --port=9898
+            - --level=info
+          ports:
+            - name: http
+              containerPort: 9898
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: podinfo-config
+          env:
+            # Secrets by key, not envFrom, so the manifest documents exactly what
+            # this workload needs.
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: podinfo-secret
+                  key: API_KEY
+          # Suspends the other two probes until the app is up.
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 2
+            failureThreshold: 30
+          # Slow and forgiving: restarts are expensive.
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Fast and strict: flipping it is cheap and reversible.
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2
+            successThreshold: 1
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              # No CPU limit: it enforces CFS quota and throttles even when the
+              # node is idle. Memory is incompressible, so limit == request.
+              memory: 64Mi

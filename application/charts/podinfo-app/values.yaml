@@ -1,0 +1,102 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/stefanprodan/podinfo
+  # Empty on purpose: the template falls back to Chart.appVersion (6.14.1), so chart
+  # metadata and the running image cannot disagree. CI overrides it at package time via
+  # `helm package --app-version`. Still pinned, never :latest.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# Chart is "podinfo-app", workload is "podinfo"; without this a release named
+# `podinfo` renders resources as `podinfo-podinfo-app`.
+nameOverride: "podinfo"
+
+serviceAccount:
+  create: true
+  name: ""
+  # Where IRSA / EKS Pod Identity attaches on AWS:
+  #   eks.amazonaws.com/role-arn: arn:aws:iam::<acct>:role/podinfo-app
+  # A dedicated SA exists so IAM permissions never land on `default`.
+  annotations: {}
+  # Nothing here talks to the Kubernetes API.
+  automountServiceAccountToken: false
+
+service:
+  type: ClusterIP
+  port: 9898
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    # No CPU limit on purpose: a limit enforces CFS quota and throttles the
+    # process even when the node has idle cores. The request already guarantees
+    # a share. Memory is incompressible, so limit == request.
+    memory: 64Mi
+
+probes:
+  # Suspends liveness/readiness until the app is up, so liveness can be
+  # aggressive without racing a slow start. Budget: 30 x 2s = 60s.
+  startup:
+    enabled: true
+    path: /healthz
+    periodSeconds: 2
+    failureThreshold: 30
+  # "Is the process wedged?" Restarts are expensive, so slow and forgiving.
+  liveness:
+    enabled: true
+    path: /healthz
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  # "Should this pod get traffic?" Cheap and reversible, so fast and strict.
+  readiness:
+    enabled: true
+    path: /readyz
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 2
+    successThreshold: 1
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  # 75% rather than 50%: the CPU request is 10m, so half of that is noise and
+  # would flap. Pick this from observed utilisation-vs-latency on a real service.
+  targetCPUUtilizationPercentage: 75
+  # Scale up fast (under-capacity hurts users), down slowly (avoids thrash).
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+    scaleUp:
+      stabilizationWindowSeconds: 30
+
+podDisruptionBudget:
+  enabled: true
+  # maxUnavailable, not minAvailable: minAvailable == replicas deadlocks node
+  # drains, and stays wrong if someone scales the Deployment down.
+  maxUnavailable: 1
+
+# No persistence: podinfo is stateless and /data holds disposable cache. Real
+# state belongs in a database (RDS) or object storage (S3), not on a volume
+# attached to a horizontally-scaled Deployment.
+
+# Non-sensitive config, split by how podinfo actually consumes it: `ui.*` renders
+# into the ConfigMap and arrives via envFrom, while `logLevel` becomes the
+# container's --level argument because podinfo reads it as a flag, not an env var.
+# Both live in the pod spec, so changing either one is a real rollout.
+config:
+  logLevel: info
+  ui:
+    message: "podinfo running on minikube, deployed by Helm"
+    color: "#2e8b57"
+
+# Sensitive config. The default is a dev-only placeholder, not a real credential.
+secrets:
+  # If set, the chart renders no Secret and consumes this one instead — the seam
+  # an external secrets manager plugs into.
+  existingSecret: ""
+  apiKey: "dev-only-not-a-real-key"

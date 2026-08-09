@@ -1,0 +1,24 @@
+# Exchanges a GitLab-signed OIDC token for one-hour AWS credentials. No AWS access keys
+# exist as CI variables. Each job sets AWS_ROLE_ARN to the least-privileged role it needs.
+#
+# Only the ECR jobs use this. Argo CD owns the cluster, so no job here assumes a role
+# with any EKS permission at all.
+
+.aws-oidc:
+  id_tokens:
+    AWS_ID_TOKEN:
+      aud: https://gitlab.com
+  before_script:
+    # Every job image using this is Alpine-based; install the CLI only if it is missing.
+    - command -v aws >/dev/null || apk add --no-cache aws-cli
+    - >
+      creds=$(aws sts assume-role-with-web-identity
+      --role-arn "$AWS_ROLE_ARN"
+      --role-session-name "gitlab-${CI_PIPELINE_ID}"
+      --web-identity-token "$AWS_ID_TOKEN"
+      --duration-seconds 3600
+      --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]'
+      --output text)
+    - export AWS_ACCESS_KEY_ID=$(echo "$creds" | cut -f1)
+    - export AWS_SECRET_ACCESS_KEY=$(echo "$creds" | cut -f2)
+    - export AWS_SESSION_TOKEN=$(echo "$creds" | cut -f3)

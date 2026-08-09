@@ -1,0 +1,16 @@
+# Scans the image sitting in ECR. Publishing is gated on this, so a chart pointing at a
+# vulnerable image never reaches Nexus and Argo never sees it.
+
+test-image:
+  extends: .aws-oidc
+  stage: test
+  image:
+    name: aquasec/trivy:0.58.1
+    entrypoint: [""]
+  variables:
+    AWS_ROLE_ARN: $ECR_PUSH_ROLE_ARN
+  needs: ["build-image"]
+  script:
+    - export TRIVY_USERNAME=AWS
+    - export TRIVY_PASSWORD=$(aws ecr get-login-password --region "$AWS_REGION")
+   - trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed "$ECR_IMAGE:$IMAGE_TAG"

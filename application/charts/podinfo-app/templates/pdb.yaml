@@ -1,0 +1,15 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "podinfo-app.name" . }}
+  labels:
+    {{- include "podinfo-app.labels" . | nindent 4 }}
+spec:
+  # Bounds voluntary disruption only (drains, upgrades). Node failures, OOM
+  # kills and crashes bypass it — replicas and readiness provide availability.
+  maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
+  selector:
+    matchLabels:
+      {{- include "podinfo-app.selectorLabels" . | nindent 6 }}
+{{- end }}

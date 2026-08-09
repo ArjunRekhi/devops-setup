@@ -1,0 +1,12 @@
+apiVersion: v2
+name: podinfo-app
+description: Deploys podinfo with separated config and secrets, probes, an HPA and a PodDisruptionBudget.
+type: application
+# Chart version, bumped when the templates change.
+version: 0.1.0
+# The podinfo release this chart deploys. `image.tag` is empty in values.yaml and
+# falls back to this, so chart metadata and the running image cannot disagree.
+appVersion: "6.14.1"
+# autoscaling/v2 and policy/v1 are both GA well before this, but 1.27 is the
+# oldest release still worth targeting.
+kubeVersion: ">=1.27.0-0"

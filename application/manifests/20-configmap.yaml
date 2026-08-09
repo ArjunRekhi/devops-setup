@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: podinfo-config
+  namespace: podinfo
+  labels:
+    app.kubernetes.io/name: podinfo
+    app.kubernetes.io/version: "6.14.1"
+    app.kubernetes.io/managed-by: kubectl
+data:
+  PODINFO_UI_MESSAGE: "podinfo running on minikube, deployed by kubectl"
+  PODINFO_UI_COLOR: "#2e8b57"

@@ -1,0 +1,25 @@
+# Packages the chart and pushes the .tgz to Nexus. This is where the pipeline ends.
+#
+# Argo CD watches the Nexus repository and reconciles the newest chart into EKS, so no
+# job in this pipeline ever holds cluster credentials. Default branch only — a merge
+# request should not publish an artifact Argo would pick up.
+
+publish-chart:
+  stage: publish
+  image:
+    name: alpine/helm:3.16.4
+    entrypoint: [""]
+  needs: ["test-chart", "test-image"]
+  before_script:
+    - apk add --no-cache yq
+  script:
+    - yq -i '.image.repository = strenv(ECR_IMAGE)' "$CHART_DIR/values.yaml"
+    - helm package "$CHART_DIR" --version "$CHART_VERSION" --app-version "$IMAGE_TAG" --destination dist/
+    - echo "$NEXUS_PASSWORD" | helm registry login "$NEXUS_REGISTRY" --username "$NEXUS_USERNAME" --password-stdin
+    - helm push "dist/podinfo-app-${CHART_VERSION}.tgz" "$NEXUS_HELM_REPO"
+  artifacts:
+    paths:
+      - dist/*.tgz
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

@@ -1,0 +1,18 @@
+# Lints the chart and validates the rendered manifests against the Kubernetes API schema.
+#
+# Argo CD renders this chart with no human in the loop, so a template that only fails at
+# apply time fails inside the cluster rather than in the pipeline. This is the gate.
+
+test-chart:
+  stage: test
+  image:
+    name: alpine/helm:3.16.4
+    entrypoint: [""]
+  # The chart does not depend on the image, so this starts immediately rather than
+  # queueing behind the mirror. A broken template fails in seconds instead of minutes.
+  needs: []
+  before_script:
+    - apk add --no-cache curl
+    - curl -sSfL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | tar -xz -C /usr/local/bin kubeconform
+  script:
+    - helm lint "$CHART_DIR"

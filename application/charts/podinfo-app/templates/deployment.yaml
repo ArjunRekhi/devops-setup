@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "podinfo-app.name" . }}
+  labels:
+    {{- include "podinfo-app.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Never dip below current capacity during a rollout.
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "podinfo-app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        # Kubernetes does not restart pods when a ConfigMap or Secret changes.
+        # Hashing the rendered content makes a config edit an actual rollout.
+        # Only covers changes made through Helm, not manual kubectl edits.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.secrets.existingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
+      labels:
+        {{- include "podinfo-app.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "podinfo-app.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+      containers:
+        - name: podinfo
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - ./podinfo
+            - --port=9898
+            - --level={{ .Values.config.logLevel }}
+          ports:
+            - name: http
+              containerPort: 9898
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "podinfo-app.name" . }}-config
+          env:
+            # Secrets by key, not envFrom: the manifest documents exactly what
+            # this workload needs, and adding a key does not silently widen it.
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "podinfo-app.secretName" . }}
+                  key: API_KEY
+          {{- if .Values.probes.startup.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.probes.startup.path }}
+              port: http
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+          {{- end }}
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          {{- end }}
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: http
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+            successThreshold: {{ .Values.probes.readiness.successThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
