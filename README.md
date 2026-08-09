@@ -1,13 +1,11 @@
 # podinfo on Kubernetes
 
 [podinfo](https://github.com/stefanprodan/podinfo) deployed to a local minikube cluster via a
-Helm chart, with notes on migrating it to AWS.
+Helm chart, with a CI pipeline and an AWS infrastructure layout alongside it.
 
-## Prerequisites
+## Run it
 
-Docker, minikube, kubectl, helm.
-
-## Bring it up
+Needs Docker, minikube, kubectl and helm.
 
 ```bash
 bash cluster/minikube-up.sh
@@ -15,63 +13,32 @@ helm upgrade --install podinfo application/charts/podinfo-app -n podinfo --creat
 bash application/verification-scripts/verify.sh
 ```
 
-Tear down with `bash cluster/minikube-down.sh`.
-
-To supply real secret values:
-
-```bash
-cp application/charts/podinfo-app/values-secret.yaml.example application/charts/values-secret.yaml
-helm upgrade --install podinfo application/charts/podinfo-app -n podinfo -f application/charts/values-secret.yaml --atomic --wait
-```
-
-The copy is gitignored. Keys must match `values.yaml` exactly — a wrong key is silently
-ignored rather than rejected.
-
 ## Layout
 
 | Path | |
 |------|--|
 | `cluster/` | Cluster create/delete scripts |
-| `application/charts/podinfo-app/` | The Helm chart |
-| `application/manifests/` | The same workload as static YAML, for reference |
-| `application/verification-scripts/verify.sh` | Port-forwards and curls the endpoints |
-| `application/verification-scripts/demo-resilience.sh` | Readiness, liveness and PDB behaviour |
-| `application/verification-scripts/demo-hpa.sh` | Drives load so the HPA reacts |
+| `application/` | The Helm chart, the same workload as static YAML, and verification scripts |
 | `.gitlab-ci.yml` · `ci-cd/` | Pipeline to ECR and Nexus — written, never run |
-| `cloud-setup/` | Terraform + Terragrunt layout for the AWS side — written, never applied |
+| `cloud-setup/` | Terraform + Terragrunt for the AWS side — written, never applied |
 | `documentation/` | Write-ups and command references |
 
+## What this is meant to show
+
+- **It runs.** One script up, one command to install, one script to prove the endpoints, probes, HPA and PDB actually behave. Secrets and ConfigMaps are kept in different files
+  and Kubernetes versions are fixed.
+- **No pipeline job holds cluster credentials.** CI stops at publishing the chart; Argo CD
+  pulls it into EKS, and AWS access is short-lived via GitLab OIDC.
+- **The gaps are stated, not hidden.** Security context, Ingress/TLS and the database are out of scope; the CI and AWS layers are written but were never executed.
+
 ## Documentation
+
+The reasoning behind every decision above lives here:
 
 1. [Cluster setup](./documentation/01-minikube-setup.md)
 2. [Helm packaging, config and secrets](./documentation/02-helm-overview.md)
 3. [CI/CD — ECR, Nexus, Argo CD](./documentation/03-cicd.md)
+4. [AWS infrastructure](./cloud-setup/README.md)
 
-Command references: [minikube](./documentation/minikube-commands.md) ·
-[helm](./documentation/helm-commands.md)
-
-The four architectural questions are answered in [NOTES.md](./NOTES.md). The AWS
-infrastructure that answers the last of them lives in
-[`cloud-setup/`](./cloud-setup/README.md).
-
-## Key points
-
-- Image pinned, never `:latest` — `image.tag` is empty and falls back to `Chart.appVersion`,
-  which CI stamps at package time.
-- Non-sensitive config in a ConfigMap via `envFrom`; the secret pulled key-by-key via
-  `secretKeyRef`. `secrets.existingSecret` is the seam an external secrets manager plugs into.
-- Config and secret content hashed into pod annotations, so a config change is a real rollout.
-- Startup, liveness and readiness probes tuned differently on purpose.
-- CPU request with no CPU limit; memory `limit == request`.
-- HPA on CPU, plus a PodDisruptionBudget using `maxUnavailable`.
-- No PVC — podinfo is stateless; persistence belongs with the database.
-- CI ends at publishing the packaged chart to Nexus; Argo CD reconciles it into EKS, so no
-  pipeline job holds cluster credentials.
-- AWS access via GitLab OIDC — short-lived credentials, no keys stored as CI variables.
-
-Reasoning is in [02-helm-overview.md](./documentation/02-helm-overview.md) and
-[03-cicd.md](./documentation/03-cicd.md).
-
-## Not done yet
-
-Pod/container security context, Ingress and TLS, and the database.
+The four architectural questions are answered in [NOTES.md](./NOTES.md). Command references:
+[minikube](./documentation/minikube-commands.md) · [helm](./documentation/helm-commands.md).
