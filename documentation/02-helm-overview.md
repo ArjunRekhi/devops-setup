@@ -8,13 +8,8 @@ Command reference: [helm-commands.md](./helm-commands.md)
 
 ## Approach
 
-Written by hand rather than generated with `helm create`: the scaffolding ships a large
-amount of unused boilerplate, and cleaning it up takes longer than writing the seven
-templates the app actually needs.
-
 The app is podinfo (`ghcr.io/stefanprodan/podinfo:6.14.1`) — a public image with real
-`/healthz` and `/readyz` endpoints, so the probes are genuine rather than decorative. No
-application code was written.
+`/healthz` and `/readyz` endpoints, so the probes are genuine rather than decorative. No application code was written.
 
 ## What the chart contains
 
@@ -37,28 +32,10 @@ Every optional piece is behind a toggle — `autoscaling.enabled`,
 
 ## Decisions worth explaining
 
-**Image pinned to a tag, never `:latest`.** An unpinned tag makes a rollout
-non-reproducible and `helm rollback` meaningless — the tag may point somewhere else by the
-time you roll back. `values.yaml` leaves `image.tag` empty so it falls back to
-`Chart.appVersion`: still pinned, and it lets CI stamp the tag at package time
-([03-cicd.md](./03-cicd.md)).
-
-**Config and secrets are separated by how they are consumed, not just where they live.**
-Non-sensitive values come from a ConfigMap via `envFrom` — the whole map at once. The
-secret is pulled key by key with `secretKeyRef`, so the Deployment documents exactly what
-it needs and adding a key to the Secret does not silently widen what the container reads.
-
-**`secrets.existingSecret` is the important half.** When set, the chart renders no Secret
-and consumes one it does not own — the seam an external secrets manager plugs into, on EKS
-External Secrets Operator syncing from AWS Secrets Manager. It keeps credentials out of
-Helm values, which `helm get values` prints in plaintext.
-
 **Checksum annotations.** Kubernetes does not restart pods when a ConfigMap changes.
 Hashing the rendered content into a pod annotation makes a config edit an actual rollout.
 Verified live: changing the UI colour produced a new checksum and rolled the pods. The
-limitation is that it only reacts to changes made through Helm — a manual `kubectl edit cm`
-restarts nothing and gets reverted on the next upgrade. Stakater Reloader is the answer if
-out-of-band edits are a real scenario.
+limitation is that it only reacts to changes made through Helm — a manual `kubectl edit cm` restarts nothing and gets reverted on the next upgrade.
 
 **Three probes, tuned differently on purpose.** The startup probe suspends the other two
 for up to 60s, which lets liveness be aggressive without racing a slow start. Liveness is
@@ -127,21 +104,3 @@ stepping back to 2 — the configured anti-thrash behaviour, not a stall.
 
 `TARGETS` showing `<unknown>` means metrics-server has not scraped yet; it needs a minute
 or two after pods start.
-
-## Out of scope here
-
-CI/CD is covered separately in [03-cicd.md](./03-cicd.md). The rest is not implemented
-anywhere: the brief asks for one or two optional extensions, Resilience and CI/CD are the
-two chosen, and the others were left out rather than half-built.
-
-- **Ingress and TLS.** Access is through `kubectl port-forward`, which the brief explicitly
-  allows. On macOS with the Docker driver the node IP is not routable, so a local Ingress
-  would have needed `minikube tunnel` running under sudo to demonstrate anything.
-- **Database integration.** podinfo has no PostgreSQL client — only a Redis cache backend —
-  so "wiring the app to it" would have meant an initContainer running `psql` to prove
-  connectivity while the app itself stayed unaware. That demonstrates the Secret plumbing,
-  not an application talking to a database.
-- **Pod and container security context.** Not a one-line addition: the podinfo image
-  declares a non-root but *named* user (`app`, dynamic UID from `adduser -S`), and setting
-  `runAsNonRoot` without a numeric `runAsUser` makes the kubelet refuse the pod outright.
-  Getting it right means pinning the UID the image actually resolves to.

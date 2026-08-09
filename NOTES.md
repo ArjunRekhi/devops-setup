@@ -81,8 +81,9 @@ fine; I personally have more experience with the CSI driver.
 *If you had to provision the AWS infrastructure (VPC, EKS cluster, RDS) for this app tomorrow,
 what tool would you choose and how would you structure the project?*
 
-**OpenTofu/Terraform for the resources, Terragrunt for the wiring.** Terraform alone means
-either one large root module per environment. Terragrunt helps in achieving the **DRY** principle, and helps when the infrastructure scales and needs to be maintained consistently.
+**OpenTofu/Terraform for the resources, Terragrunt for the wiring.** Terraform alone means one
+large root module per environment. Terragrunt keeps that **DRY**, which is what matters once
+the infrastructure grows and has to stay consistent across environments.
 
 Rather than describe it, I built it — [`cloud-setup/`](./cloud-setup/), with
 [its README](./cloud-setup/README.md) as the full write-up. Never applied: no AWS account, so
