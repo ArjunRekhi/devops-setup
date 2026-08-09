@@ -9,21 +9,14 @@ from scratch are in the [README](./README.md)
 
 *What parts of the implementation did you decide to skip or simplify, and why?*
 
-The brief asks for one or two optional extensions; Resilience and CI/CD were the two chosen,
-so Ingress/TLS and the database were left out rather than half-built. Both were cut for time,
-not because the approach was unclear.
+**TLS And the Databased sections were left out due to the time constrint**
+
+**Below would be the ways that I would apprach the two cases**
 
 **TLS.** Where it terminates decides the implementation. Inside the cluster, cert-manager
-issues and renews the certificate into a Secret the Ingress references. On AWS the more usual
-choice is to terminate at the load balancer: the AWS Load Balancer Controller provisions an
-ALB from the Ingress and an ACM certificate is referenced by annotation, so no private key is
-ever handled in the cluster.
+issues and renews the certificate into a Secret the Ingress references. On AWS the more usual choice is to terminate at the load balancerm, referencing the certs via the ACM
 
-**The database.** Locally this would have been a PostgreSQL StatefulSet — a headless Service
-giving the pod a stable FQDN, that FQDN as the application's database host, the database and
-role created on first start, and `volumeClaimTemplates` for per-pod persistence. On AWS none
-of that applies: the workload becomes Amazon RDS, the host is the instance endpoint, and
-provisioning, backups, failover and patching stop being the cluster's problem.
+**The database.** Locally this would have been a PostgreSQL StatefulSet exposed via a headless Service giving the pod a stable FQDN, that FQDN as the application's database host. `volumeClaimTemplates` for per-pod persistence. On AWS none of these applies: the workload becomes Amazon RDS, the host is the instance endpoint, and provisioning, backups, failover are mostly abstracted.
 
 ---
 
@@ -59,15 +52,10 @@ no identity model, and every pod reachable from every other one.
 
 *How would you securely pass secrets to pods in AWS EKS? (e.g., AWS Secrets Manager + External Secrets Operator vs CSI Driver, IAM Roles for Service Accounts). What is your preferred approach?*
 
-Both options agree on the part that matters most: the identity is a Kubernetes ServiceAccount
-mapped to an IAM role through IRSA, so nothing in the cluster holds a static AWS credential
-and the grant can be scoped to one secret path rather than to Secrets Manager as a whole.
+IRSA will be shared by both the approaches for authorization from AWS.
 
-**Secrets Store CSI Driver.** A `SecretProviderClass` names the secrets; the driver fetches
-them when the pod starts and mounts them as files in a tmpfs volume. The pod's own
-ServiceAccount is the identity, so each workload authorises only for what it needs, and the
-material never becomes a Kubernetes object — it is not in etcd, not in an etcd backup, and not
-readable with `kubectl get secret`. It disappears with the pod.
+**Secrets Store CSI Driver.** A `SecretProviderClass` names the secrets; the driver fetches them when the pod starts and mounts them as files in a tmpfs volume. The pod's own
+ServiceAccount is the identity, so each workload authorises only for what it needs, and the material never becomes a Kubernetes object — it is not in etcd, not in an etcd backup, and not readable with `kubectl get secret`. It disappears with the pod.
 
 **External Secrets Operator.** A controller reconciles an `ExternalSecret` into a native
 Kubernetes Secret. Any workload then consumes it by name without knowing where it came from,
@@ -98,13 +86,7 @@ application's consumption model is the reason it is not what got built.
 what tool would you choose and how would you structure the project?*
 
 **OpenTofu/Terraform for the resources, Terragrunt for the wiring.** Terraform alone means
-either one large root module per environment or a copied `backend.tf` and `provider.tf` in
-every component directory. Terragrunt declares both once and generates them per component,
-without adding a second language for describing resources.
-
-Three layers: `tf-modules/stacks/` is **what** a component is, `tg-modules/` is **how** it is
-configured everywhere, `namespaces/` is **where** it is deployed. Environments are separate
-AWS accounts.
+either one large root module per environment. Terragrunt helps in achieving the **DRY** principle, and helps when the infrastructure scales and needs to be maintained consistently.
 
 Rather than describe it, I built it — [`cloud-setup/`](./cloud-setup/), with
 [its README](./cloud-setup/README.md) as the full write-up. Never applied: no AWS account, so
