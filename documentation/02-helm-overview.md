@@ -100,8 +100,10 @@ Ctrl-C stops the load and removes the pod.
 
 The CPU request is 10m, so the 75% target is 7.5m and is easily exceeded. The HPA evaluates
 every 15s against a 30s `scaleUp` window, so replicas climb within roughly a minute up to
-`maxReplicas: 6`. Scale-down then holds for the full 120s `scaleDown` window before
-stepping back to 2 — the configured anti-thrash behaviour, not a stall.
+`maxReplicas: 6`. Stepping back to 2 takes about four minutes from the load stopping —
+metrics-server needs a minute or two to report the drop, and only then does the 120s
+`scaleDown` window run. Measured at 268s. That is the configured anti-thrash behaviour
+plus scrape lag, not a stall.
 
 `TARGETS` showing `<unknown>` means metrics-server has not scraped yet; it needs a minute
 or two after pods start.

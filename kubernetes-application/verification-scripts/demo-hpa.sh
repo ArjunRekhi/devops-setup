@@ -31,7 +31,8 @@ cleanup() {
   for i in $(seq 1 "${WORKERS}"); do
     kubectl -n "${NAMESPACE}" delete pod "loadgen-${i}" --ignore-not-found --wait=false >/dev/null 2>&1 || true
   done
-  echo "Replicas stay high for ~2 min after load stops (scaleDown stabilisation)."
+  echo "Replicas stay high for ~4 min after load stops: metrics-server takes a"
+  echo "minute or two to report the drop, then the 120s scaleDown window runs."
 }
 trap cleanup EXIT
 
