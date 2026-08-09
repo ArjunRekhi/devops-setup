@@ -65,13 +65,13 @@ becomes a Kubernetes object, so it is not in etcd and not readable with `kubectl
 normally, but the value sits in etcd and the IAM role belongs to the operator rather than the
 workload — that is my reservation, not the duplication itself.
 
-**Alternate: AWS AppConfig.** If AWS is the chosen cloud there is a third option. The secret
+**Alternate: AWS AppConfig/Native Cloud solution.** If AWS is the chosen cloud there is a third option. The secret
 itself stays in Secrets Manager, and AppConfig serves it to the application through a
 configuration profile that points at it. It is the more scalable and productionised route,
 because the profiles are already scoped per microservice and per environment — and it covers
 configuration in general, not only secrets.
 
-**Preference.** AppConfig, where AWS is the chosen cloud. Otherwise either of the other two is
+**Preference.** AppConfig/Native Cloud solution, where AWS is the chosen cloud. Otherwise either of the other two is
 fine; I personally have more experience with the CSI driver.
 
 ---
