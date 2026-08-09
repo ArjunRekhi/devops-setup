@@ -31,7 +31,6 @@ spec:
         {{- include "podinfo-app.selectorLabels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ include "podinfo-app.serviceAccountName" . }}
-      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
       containers:
         - name: podinfo
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

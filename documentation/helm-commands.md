@@ -1,22 +1,22 @@
 # Helm commands
 
-Release `podinfo`, namespace `podinfo`, chart at `application/charts/podinfo-app`.
+Release `podinfo`, namespace `podinfo`, chart at `kubernetes-application/charts/podinfo-app`.
 
 ## Before deploying (no cluster needed)
 
 ```bash
-helm lint application/charts/podinfo-app
-helm template podinfo application/charts/podinfo-app -n podinfo
-helm template podinfo application/charts/podinfo-app -n podinfo --show-only templates/deployment.yaml
-helm template podinfo application/charts/podinfo-app -n podinfo --set autoscaling.enabled=false
+helm lint kubernetes-application/charts/podinfo-app
+helm template podinfo kubernetes-application/charts/podinfo-app -n podinfo
+helm template podinfo kubernetes-application/charts/podinfo-app -n podinfo --show-only templates/deployment.yaml
+helm template podinfo kubernetes-application/charts/podinfo-app -n podinfo --set autoscaling.enabled=false
 ```
 
 ## Deploy
 
 ```bash
-helm upgrade --install podinfo application/charts/podinfo-app -n podinfo --create-namespace --atomic --wait --timeout 5m
-helm upgrade --install podinfo application/charts/podinfo-app -n podinfo -f application/charts/values-secret.yaml --atomic --wait
-helm install podinfo application/charts/podinfo-app -n podinfo --dry-run --debug
+helm upgrade --install podinfo kubernetes-application/charts/podinfo-app -n podinfo --create-namespace --atomic --wait --timeout 5m
+helm upgrade --install podinfo kubernetes-application/charts/podinfo-app -n podinfo -f kubernetes-application/charts/values-secret.yaml --atomic --wait
+helm install podinfo kubernetes-application/charts/podinfo-app -n podinfo --dry-run --debug
 ```
 
 `--install` makes it idempotent — same command for first install and every upgrade.
@@ -63,14 +63,14 @@ helm uninstall podinfo -n podinfo
 ## Package
 
 ```bash
-helm package application/charts/podinfo-app
+helm package kubernetes-application/charts/podinfo-app
 ```
 
 ## Diff plugin
 
 ```bash
 helm plugin install https://github.com/databus23/helm-diff
-helm diff upgrade podinfo application/charts/podinfo-app -n podinfo
+helm diff upgrade podinfo kubernetes-application/charts/podinfo-app -n podinfo
 ```
 
 Previews exactly what an upgrade would change before you run it.

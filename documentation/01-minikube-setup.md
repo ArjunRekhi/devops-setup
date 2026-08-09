@@ -37,7 +37,7 @@ The creation command lives in the repository, not only in this document, so the
 environment is reproducible from a clean machine:
 
 ```sh
-bash cluster/minikube-up.sh
+bash kubernetes-application/cluster-setup/minikube-up.sh
 ```
 
 It is idempotent — re-running an existing profile only re-asserts the addons. It
@@ -51,7 +51,7 @@ Kubernetes is pinned rather than tracking `stable`. v1.35.1 is one minor behind
 upstream and explicitly supported by the installed minikube — also closer to how
 EKS works, since AWS does not ship a new minor on upstream release day.
 
-Tear down with `bash cluster/minikube-down.sh` (a full `minikube delete`, so the
+Tear down with `bash kubernetes-application/cluster-setup/minikube-down.sh` (a full `minikube delete`, so the
 next bring-up has to prove itself from scratch).
 
 **4. Verify**

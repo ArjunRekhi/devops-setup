@@ -2,7 +2,7 @@
 #
 # Drives CPU load so the HPA has something to react to.
 #
-# Usage: bash application/verification-scripts/demo-hpa.sh
+# Usage: bash kubernetes-application/verification-scripts/demo-hpa.sh
 #
 set -euo pipefail
 
@@ -31,7 +31,7 @@ cleanup() {
   for i in $(seq 1 "${WORKERS}"); do
     kubectl -n "${NAMESPACE}" delete pod "loadgen-${i}" --ignore-not-found --wait=false >/dev/null 2>&1 || true
   done
-  echo "Replicas stay high for ~5 min after load stops (scaleDown stabilisation)."
+  echo "Replicas stay high for ~2 min after load stops (scaleDown stabilisation)."
 }
 trap cleanup EXIT
 

@@ -26,7 +26,9 @@ spec:
   behavior:
     # Asymmetric: slow to add capacity costs users latency, slow to remove it
     # costs cents, and eager scale-down thrashes when load returns.
+    # scaleDown is 120s rather than the Kubernetes default of 300s so the demo
+    # shows the step back down without a five-minute wait.
     scaleUp:
       stabilizationWindowSeconds: 30
     scaleDown:
-      stabilizationWindowSeconds: 300
+      stabilizationWindowSeconds: 120

@@ -8,7 +8,7 @@
 # they authenticate against, which is the usual chicken-and-egg failure.
 #
 # Application workloads are NOT here. podinfo ships as its own Helm chart in
-# application/charts/podinfo-app and is deployed by the pipeline, not by
+# kubernetes-application/charts/podinfo-app and is deployed by the pipeline, not by
 # Terraform -- see documentation/03-cicd.md.
 
 data "aws_caller_identity" "current" {}

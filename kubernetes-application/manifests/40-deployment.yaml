@@ -25,7 +25,6 @@ spec:
         app.kubernetes.io/name: podinfo
     spec:
       serviceAccountName: podinfo
-      automountServiceAccountToken: false
       containers:
         - name: podinfo
           image: ghcr.io/stefanprodan/podinfo:6.14.1

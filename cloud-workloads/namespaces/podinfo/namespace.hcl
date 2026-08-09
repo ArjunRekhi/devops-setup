@@ -12,7 +12,7 @@ locals {
   cost_center = "platform"
 
   # How the workload identifies itself inside the cluster. Kept here because the
-  # Helm chart in application/charts/podinfo-app uses the same values, and two
+  # Helm chart in kubernetes-application/charts/podinfo-app uses the same values, and two
   # places disagreeing about a ServiceAccount name is a silent failure.
   kubernetes_namespace = "podinfo"
   service_account_name = "podinfo"
@@ -31,6 +31,6 @@ locals {
     Owner       = "platform-engineering"
     CostCenter  = "platform"
     ManagedBy   = "terragrunt"
-    Repository  = "cloud-setup"
+    Repository  = "cloud-workloads"
   }
 }

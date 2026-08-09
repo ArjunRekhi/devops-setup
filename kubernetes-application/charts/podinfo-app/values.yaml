@@ -2,14 +2,9 @@ replicaCount: 2
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  # Empty on purpose: the template falls back to Chart.appVersion (6.14.1), so chart
-  # metadata and the running image cannot disagree. CI overrides it at package time via
-  # `helm package --app-version`. Still pinned, never :latest.
   tag: ""
   pullPolicy: IfNotPresent
 
-# Chart is "podinfo-app", workload is "podinfo"; without this a release named
-# `podinfo` renders resources as `podinfo-podinfo-app`.
 nameOverride: "podinfo"
 
 serviceAccount:
@@ -19,8 +14,6 @@ serviceAccount:
   #   eks.amazonaws.com/role-arn: arn:aws:iam::<acct>:role/podinfo-app
   # A dedicated SA exists so IAM permissions never land on `default`.
   annotations: {}
-  # Nothing here talks to the Kubernetes API.
-  automountServiceAccountToken: false
 
 service:
   type: ClusterIP
@@ -64,13 +57,15 @@ autoscaling:
   enabled: true
   minReplicas: 2
   maxReplicas: 6
-  # 75% rather than 50%: the CPU request is 10m, so half of that is noise and
-  # would flap. Pick this from observed utilisation-vs-latency on a real service.
+
   targetCPUUtilizationPercentage: 75
   # Scale up fast (under-capacity hurts users), down slowly (avoids thrash).
+  # Kubernetes defaults scaleDown to 300s. Lowered to 120s so the demo shows the
+  # step back down in a reasonable time while staying 4x the scaleUp window; a
+  # production value would go back up.
   behavior:
     scaleDown:
-      stabilizationWindowSeconds: 300
+      stabilizationWindowSeconds: 120
     scaleUp:
       stabilizationWindowSeconds: 30
 

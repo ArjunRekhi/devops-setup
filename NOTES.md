@@ -85,6 +85,6 @@ what tool would you choose and how would you structure the project?*
 large root module per environment. Terragrunt keeps that **DRY**, which is what matters once
 the infrastructure grows and has to stay consistent across environments.
 
-Rather than describe it, I built it — [`cloud-setup/`](./cloud-setup/), with
-[its README](./cloud-setup/README.md) as the full write-up. Never applied: no AWS account, so
+Rather than describe it, I built it — [`cloud-workloads/`](./cloud-workloads/), with
+[its README](./cloud-workloads/README.md) as the full write-up. Never applied: no AWS account, so
 no account IDs, no ARNs, no state.

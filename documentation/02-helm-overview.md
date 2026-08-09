@@ -1,7 +1,7 @@
 # Helm section — what was done
 
 Covers assignment tasks 3 (Helm packaging) and 4 (configuration and secrets), plus the
-resilience extension. Chart lives at `application/charts/podinfo-app`.
+resilience extension. Chart lives at `kubernetes-application/charts/podinfo-app`.
 
 Cluster setup: [01-minikube-setup.md](./01-minikube-setup.md)
 Command reference: [helm-commands.md](./helm-commands.md)
@@ -48,9 +48,10 @@ scheduling. Memory is incompressible, so there `limit == request`.
 
 **The HPA targets 75% CPU, not the usual 50%.** The request is 10m, so half of it is
 measurement noise and the autoscaler would flap on it. Scale-up uses a 30s stabilization
-window and scale-down 300s — deliberately asymmetric: being slow to add capacity costs
+window and scale-down 120s — deliberately asymmetric: being slow to add capacity costs
 users latency, being slow to remove it costs a few cents, and eager scale-down causes
-thrash when the load returns.
+thrash when the load returns. Kubernetes defaults scale-down to 300s; 120s keeps the
+asymmetry while letting the demo finish, and production would raise it again.
 
 **`replicas` is omitted when the HPA is enabled.** Both write `spec.replicas`. If the chart
 declares it, every `helm upgrade` resets the count and fights the autoscaler — and Helm's
@@ -99,7 +100,7 @@ Ctrl-C stops the load and removes the pod.
 
 The CPU request is 10m, so the 75% target is 7.5m and is easily exceeded. The HPA evaluates
 every 15s against a 30s `scaleUp` window, so replicas climb within roughly a minute up to
-`maxReplicas: 6`. Scale-down then holds for the full 300s `scaleDown` window before
+`maxReplicas: 6`. Scale-down then holds for the full 120s `scaleDown` window before
 stepping back to 2 — the configured anti-thrash behaviour, not a stall.
 
 `TARGETS` showing `<unknown>` means metrics-server has not scraped yet; it needs a minute

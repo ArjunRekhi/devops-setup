@@ -3,7 +3,7 @@ values-secret.yaml
 **/charts/*/values-secret.yaml
 *.secret.yaml
 
-# Locally generated TLS material (Phase 4 regenerates it via cluster/gen-tls.sh)
+# Locally generated TLS material
 certs/
 *.key
 *.crt
@@ -26,3 +26,5 @@ certs/
 *.swp
 .idea/
 .vscode/
+
+.claude

@@ -22,7 +22,7 @@ variables:
   NEXUS_REGISTRY: nexus.example.com
   NEXUS_HELM_REPO: "oci://${NEXUS_REGISTRY}/helm-hosted"
 
-  CHART_DIR: application/charts/podinfo-app
+  CHART_DIR: kubernetes-application/charts/podinfo-app
   # Monotonic and valid SemVer, so Argo can order published releases.
   CHART_VERSION: "0.1.${CI_PIPELINE_IID}"
 

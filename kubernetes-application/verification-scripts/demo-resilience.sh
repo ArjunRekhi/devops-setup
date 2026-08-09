@@ -8,13 +8,13 @@
 #
 # Works whether the app was installed with Helm or applied with kubectl.
 #
-# Usage: bash application/verification-scripts/demo-resilience.sh [readiness|liveness|disruption|all]
+# Usage: bash kubernetes-application/verification-scripts/demo-resilience.sh [readiness|liveness|disruption|all]
 #
 set -euo pipefail
 
 NAMESPACE="${NAMESPACE:-podinfo}"
 APP="${APP:-podinfo}"
-CHART="${CHART:-application/charts/podinfo-app}"
+CHART="${CHART:-kubernetes-application/charts/podinfo-app}"
 SCENARIO="${1:-all}"
 
 # The chart does not set app.kubernetes.io/instance -- resource names are fixed
